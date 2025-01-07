@@ -11,6 +11,7 @@ router.post('/login', authCtrl.login)
 //customer list
 router.get('/user_customer', authCtrl.getCustomerList)
 router.get('/user_customer/:userId', authCtrl.getOneCustomer)
+router.put('/user_customer/:userId', authCtrl.updateCustomer)
 //End of user apis
 
 

@@ -107,3 +107,38 @@ module.exports.getOneCustomer = (req, res)=>{
      sendJSONresponse(res, 401, err)
     })
 }
+
+module.exports.updateCustomer = (req, res)=>{
+    const userId = req.params.userId
+    if (!req.body.name || !req.body.email) {
+        sendJSONresponse(res, 400, {
+            message: "Fill in all required fields",
+        });
+    }
+
+    const{name, email, address, phonenumber, golf_club_size} = req.body
+
+    pool.query(
+        `UPDATE users SET
+         email = $1,
+         name = $2, 
+         address = $3, 
+         phonenumber = $4,
+         golf_club_size = $5
+         WHERE userId=$6
+        `,
+        [
+           email,
+           name,
+           address,
+           phonenumber,
+           golf_club_size,
+           userId
+        ]
+    ).then((response)=>{
+        sendJSONresponse(res, 200, {"message":`Customer record updated successfully`})
+    }).catch((err)=>{
+        sendJSONresponse(res, 401, {"message":"There was an error updating customer record ",err})
+    })
+
+}
