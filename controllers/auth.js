@@ -86,3 +86,24 @@ module.exports.login = (req, res, next)=>{
     })(req, res, next);
 }
 
+module.exports.getCustomerList = (req, res)=>{
+   pool.query("SELECT userid, email, name, address, phonenumber, golf_club_size, usertype FROM users WHERE usertype='Customer' ")
+   .then((response)=>{
+      sendJSONresponse(res, 200, response.rows)
+   }).catch((err)=>{
+    sendJSONresponse(res, 401, err)
+   })
+}
+
+module.exports.getOneCustomer = (req, res)=>{
+    const userId = req.params.userId
+    pool.query("SELECT userid, email, name, address, phonenumber, golf_club_size, usertype FROM users WHERE userid=$1 ",
+        [
+            userId
+        ])
+    .then((response)=>{
+       sendJSONresponse(res, 200, response.rows[0])
+    }).catch((err)=>{
+     sendJSONresponse(res, 401, err)
+    })
+}
