@@ -6,13 +6,13 @@ const pool = require('../model/db');
 const passport = require('passport');
 
 module.exports.register =(req, res)=>{
-    if (!req.body.name || !req.body.email || !req.body.password) {
+    if (!req.body.name || !req.body.email || !req.body.password || !req.body.usertype) {
         sendJSONresponse(res, 400, {
             message: "Fill in all required fields",
         });
     }
 
-    const{name, email, password, address, phonenumber, golf_club_size} = req.body
+    const{name, email, password, address, phonenumber, golf_club_size, usertype} = req.body
 
     getUserByEmail(email).then((userExist)=>{
         if(userExist.length > 0){
@@ -31,15 +31,17 @@ module.exports.register =(req, res)=>{
             address, 
             phonenumber, 
             golf_club_size,
+            usertype,
             hash,
             salt
-            )VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING userId, name, email, address, phonenumber, golf_club_size`,
+            )VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING userId, name, email, address, phonenumber, golf_club_size, usertype`,
             [
                 email,
                 name,
                 address,
                 phonenumber,
                 golf_club_size,
+                usertype,
                 hash,
                 salt
             ]
@@ -49,12 +51,12 @@ module.exports.register =(req, res)=>{
             sendJSONresponse(res, 201, {
                 "token":token,
                 "user":user,
-                "message":"Golffit Customer registration is successful!"
+                "message":"Golffit user has been registered successfully!"
             })
         }).catch((err)=>{
             if (!res.headersSent) {
                 return sendJSONresponse(res, 400, {
-                    message: "Failed to register customer",
+                    message: "Failed to register Golffit user",
                     error: err.message || err
                 });
             }

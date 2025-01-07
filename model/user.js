@@ -14,6 +14,7 @@ const createTableUser = async()=>{
       address TEXT,
       phonenumber VARCHAR(30),
       golf_club_size VARCHAR(30),
+      usertype VARCHAR(50) NOT NULL,
       hash VARCHAR NOT NULL,
       salt VARCHAR NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
