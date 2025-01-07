@@ -3,15 +3,16 @@ var router = express.Router();
 
 const authCtrl = require("../controllers/auth")
 
-
 // users creation apis
-router.post('/register', authCtrl.register)
+router.post('/registerAdmin', authCtrl.registerAdmin)
+router.post('/registerCustomer', authCtrl.registerCustomer)
 router.post('/login', authCtrl.login)
+//End of users 
 
-//customer list
+//customer apis
 router.get('/user_customer', authCtrl.getCustomerList)
-router.get('/user_customer/:userId', authCtrl.getOneCustomer)
-router.put('/user_customer/:userId', authCtrl.updateCustomer)
+router.get('/user_customer/:customerId', authCtrl.getOneCustomer)
+router.put('/user_customer/:customerId', authCtrl.updateCustomer)
 //End of user apis
 
 

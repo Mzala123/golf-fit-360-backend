@@ -9,18 +9,15 @@ const createTableUser = async()=>{
      CREATE TABLE IF NOT EXISTS users
      (
       userId SERIAL PRIMARY KEY,
-      email VARCHAR(255) UNIQUE NOT NULL,
-      name VARCHAR NOT NULL,
-      address TEXT,
-      phonenumber VARCHAR(30),
-      golf_club_size VARCHAR(30),
-      usertype VARCHAR(50) NOT NULL,
+      userName VARCHAR(255) UNIQUE NOT NULL,
+      userType VARCHAR(30) NOT NULL,
       hash VARCHAR NOT NULL,
       salt VARCHAR NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-     )
-    `
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+     );
+    `;
+
     try{
         const client = await pool.connect()
         await client.query(createTableQuery)
@@ -32,10 +29,61 @@ const createTableUser = async()=>{
 }
 
 
-const getUserByEmail = async(email)=>{
-   const result = await pool.query("SELECT * FROM users WHERE email=$1",
+
+const createTableCustomer = async()=>{
+    const createTableQuery = 
+    `
+     CREATE TABLE IF NOT EXISTS customers
+     (
+       customerId SERIAL PRIMARY KEY,
+       userId INTEGER NOT NULL,
+       firstName VARCHAR(100) NOT NULL,
+       lastName VARCHAR(100) NOT NULL,
+       email VARCHAR(255) UNIQUE NOT NULL,
+       phoneNumber VARCHAR(30),
+       address TEXT,
+       gender VARCHAR(10),
+       golfClubSize VARCHAR(50)
+     )
+    `;
+    try{
+        const client = await pool.connect()
+        await client.query(createTableQuery)
+        console.log("Table customer created or already exists")
+        client.release()
+    }catch(err){
+        console.log("Error creating table patient "+err)
+    }
+}
+
+const createTableAdmin = async()=>{
+    const createTableQuery = 
+    `
+      CREATE TABLE IF NOT EXISTS admin
+      (
+        adminId SERIAL PRIMARY KEY,
+        userId INTEGER  NOT NULL,
+        firstName VARCHAR(100) NOT NULL,
+        lastName VARCHAR(100) NOT NULL
+      );
+    `;
+
+    try{
+        const client = await pool.connect()
+        await client.query(createTableQuery)
+        console.log("Table admin created or already exists")
+        client.release()
+    }catch(err){
+        console.log("Error creating table admin")
+    }
+}
+
+
+
+const getUserByEmail = async(username)=>{
+   const result = await pool.query("SELECT * FROM users WHERE username=$1",
     [
-      email
+      username
     ]).then((response)=>{
         return response.rows
     }).catch((err)=>{
@@ -73,6 +121,8 @@ const generateJwt = (user) => {
 
 module.exports = {
     createTableUser,
+    createTableCustomer,
+    createTableAdmin,
     setPassword,
     validPassword,
     generateJwt,

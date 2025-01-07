@@ -2,69 +2,126 @@ const sendJSONresponse = require('../services/response' )
 const{ setPassword,
     generateJwt,
     getUserByEmail} = require("../model/user");
+
 const pool = require('../model/db');
 const passport = require('passport');
 
-module.exports.register =(req, res)=>{
-    if (!req.body.name || !req.body.email || !req.body.password || !req.body.usertype) {
-        sendJSONresponse(res, 400, {
+module.exports.registerCustomer = async (req, res) => {
+    if (!req.body.firstName || !req.body.lastName || !req.body.email || !req.body.password) {
+        return sendJSONresponse(res, 400, {
             message: "Fill in all required fields",
         });
     }
 
-    const{name, email, password, address, phonenumber, golf_club_size, usertype} = req.body
+    const { firstName, lastName, email, password, address, phoneNumber, gender, golfClubSize } = req.body;
+    const userType = "CUSTOMER";
 
-    getUserByEmail(email).then((userExist)=>{
-        if(userExist.length > 0){
-            return sendJSONresponse(res, 400, {"message":"Email already in use with another customer"})
+    try {
+        const userExist = await getUserByEmail(email);
+        if (userExist.length > 0) {
+            return sendJSONresponse(res, 400, { message: "Email already in use with another customer" });
         }
-    }).catch(()=>{
-        console.log("Mwadutsa")
-    })
 
-     const{salt, hash} = setPassword(password)
-     pool.query(
-            `INSERT INTO users 
-            (
-            email,
-            name, 
-            address, 
-            phonenumber, 
-            golf_club_size,
-            usertype,
-            hash,
-            salt
-            )VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING userId, name, email, address, phonenumber, golf_club_size, usertype`,
-            [
-                email,
-                name,
-                address,
-                phonenumber,
-                golf_club_size,
-                usertype,
-                hash,
-                salt
-            ]
-        ).then((response)=>{
-            const user = response.rows[0]
-            const token = generateJwt(user)
-            sendJSONresponse(res, 201, {
-                "token":token,
-                "user":user,
-                "message":"Golffit user has been registered successfully!"
+        const { salt, hash } = setPassword(password);
+
+        await pool.query('BEGIN');
+
+        const userInsertQuery = `
+            INSERT INTO users (userName, userType, hash, salt)
+            VALUES ($1, $2, $3, $4)
+            RETURNING userId, userName, userType;
+        `;
+        const userRecord = await pool.query(userInsertQuery, [email, userType, hash, salt]);
+        const userId = userRecord.rows[0].userid;
+
+        const customerInsertQuery = `
+            INSERT INTO customers (userId, firstname, lastname, email, phonenumber, address, gender, golfclubsize)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING userId, firstname, lastname, email, phonenumber, address, gender, golfclubsize;
+        `;
+        const customerResponse = await pool.query(customerInsertQuery, [userId, firstName, lastName, email, phoneNumber, address, gender, golfClubSize]);
+
+        const token = generateJwt(userRecord.rows[0]);
+
+        await pool.query("COMMIT");
+
+        sendJSONresponse(res, 201, {
+            token,
+            user: userRecord.rows[0],
+            customer: customerResponse.rows[0],
+            message: "Golffit Customer has been registered successfully!"
+        });
+
+    } catch (err) {
+        await pool.query('ROLLBACK');
+        sendJSONresponse(res, 400, {
+            message: "Failed to register Golffit user",
+            error: err.message || err,
+        });
+    }
+};
+
+
+
+module.exports.registerAdmin = async(req, res)=>{
+    if (!req.body.firstName || !req.body.lastName || !req.body.email || !req.body.password) {
+        return sendJSONresponse(res, 400, {
+            message: "Fill in all required fields",
+        });
+    }
+
+    const { firstName, lastName, email, password } = req.body;
+    const userType = "ADMIN";
+
+    try{
+        const userExist = await getUserByEmail(email);
+        if (userExist.length > 0) {
+            return sendJSONresponse(res, 400, { message: "Email already in use with another user" });
+        }
+
+        const { salt, hash } = setPassword(password);
+        await pool.query('BEGIN');
+
+        const userInsertQuery = `
+            INSERT INTO users (userName, userType, hash, salt)
+            VALUES ($1, $2, $3, $4)
+            RETURNING userId, userName, userType;
+        `;
+        const userRecord = await pool.query(userInsertQuery, [email, userType, hash, salt]);
+        const userId = userRecord.rows[0].userid;
+
+        const adminInsertQuery = `
+         INSERT INTO admin (userId, firstName, lastName)
+         VALUES ($1,$2,$3) 
+         RETURNING userid, firstname, lastname
+        `
+        const adminResponse = await pool.query(adminInsertQuery, [userId, firstName, lastName])
+
+        const token = generateJwt(userRecord.rows[0])
+
+        await pool.query("COMMIT") 
+
+        sendJSONresponse(res, 201, 
+            {
+                token,
+                user: userRecord.rows[0],
+                admin: adminResponse.rows[0],
+                message:"Golffit admin has been registered successfully"
             })
-        }).catch((err)=>{
-            if (!res.headersSent) {
-                return sendJSONresponse(res, 400, {
-                    message: "Failed to register Golffit user",
-                    error: err.message || err
-                });
-            }
-        })
+
+    }catch(err){
+        await pool.query('ROLLBACK');
+        sendJSONresponse(res, 400, {
+            message: "Failed to register Golffit user",
+            error: err.message || err,
+        });
+    }
+
+
 }
 
 module.exports.login = (req, res, next)=>{
-    if(!req.body.email || !req.body.password){
+    if(!req.body.username || !req.body.password){
         sendJSONresponse(res, 400, {"message":"Please fill in all required fields"})
         return
     }
@@ -87,7 +144,7 @@ module.exports.login = (req, res, next)=>{
 }
 
 module.exports.getCustomerList = (req, res)=>{
-   pool.query("SELECT userid, email, name, address, phonenumber, golf_club_size, usertype FROM users WHERE usertype='Customer' ")
+   pool.query("SELECT * FROM customers ")
    .then((response)=>{
       sendJSONresponse(res, 200, response.rows)
    }).catch((err)=>{
@@ -96,10 +153,11 @@ module.exports.getCustomerList = (req, res)=>{
 }
 
 module.exports.getOneCustomer = (req, res)=>{
-    const userId = req.params.userId
-    pool.query("SELECT userid, email, name, address, phonenumber, golf_club_size, usertype FROM users WHERE userid=$1 ",
+    const customerId = req.params.customerId
+
+    pool.query("SELECT * FROM customers WHERE customerId=$1 ",
         [
-            userId
+            customerId
         ])
     .then((response)=>{
        sendJSONresponse(res, 200, response.rows[0])
@@ -109,36 +167,36 @@ module.exports.getOneCustomer = (req, res)=>{
 }
 
 module.exports.updateCustomer = (req, res)=>{
-    const userId = req.params.userId
+    const customerid = req.params.customerid
     if (!req.body.name || !req.body.email) {
         sendJSONresponse(res, 400, {
             message: "Fill in all required fields",
         });
     }
 
-    const{name, email, address, phonenumber, golf_club_size} = req.body
+    // const{name, email, address, phonenumber, golf_club_size} = req.body
 
-    pool.query(
-        `UPDATE users SET
-         email = $1,
-         name = $2, 
-         address = $3, 
-         phonenumber = $4,
-         golf_club_size = $5
-         WHERE userId=$6
-        `,
-        [
-           email,
-           name,
-           address,
-           phonenumber,
-           golf_club_size,
-           userId
-        ]
-    ).then((response)=>{
-        sendJSONresponse(res, 200, {"message":`Customer record updated successfully`})
-    }).catch((err)=>{
-        sendJSONresponse(res, 401, {"message":"There was an error updating customer record ",err})
-    })
+    // pool.query(
+    //     `UPDATE users SET
+    //      email = $1,
+    //      name = $2, 
+    //      address = $3, 
+    //      phonenumber = $4,
+    //      golf_club_size = $5
+    //      WHERE userId=$6
+    //     `,
+    //     [
+    //        email,
+    //        name,
+    //        address,
+    //        phonenumber,
+    //        golf_club_size,
+    //        userId
+    //     ]
+    // ).then((response)=>{
+    //     sendJSONresponse(res, 200, {"message":`Customer record updated successfully`})
+    // }).catch((err)=>{
+    //     sendJSONresponse(res, 401, {"message":"There was an error updating customer record ",err})
+    // })
 
 }

@@ -5,9 +5,10 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+const cors = require("cors")
 
 require("./model/db")
-const {createTableUser} =  require('./model/user')
+const {createTableUser, createTableCustomer, createTableAdmin} =  require('./model/user')
 
 var routesApi = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -16,9 +17,18 @@ const passport = require("passport")
 require("./config/passport")
 
 var app = express();
+app.use(cors())
 
 createTableUser().catch((err)=>{
   console.log("Error initializing database "+err)
+})
+
+createTableCustomer().catch((err)=>{
+  console.log("Error initializing database "+err)
+})
+
+createTableAdmin().catch((err)=>{
+  console.log("Error n")
 })
 
 // view engine setup

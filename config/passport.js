@@ -4,7 +4,7 @@ const{getUserByEmail, validPassword} = require("../model/user")
 
 passport.use(new LocalStrategy(
     {
-        usernameField:"email"
+        usernameField:"username"
     },
 
      function(username, password, done){
