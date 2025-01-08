@@ -166,37 +166,45 @@ module.exports.getOneCustomer = (req, res)=>{
     })
 }
 
-module.exports.updateCustomer = (req, res)=>{
-    const customerid = req.params.customerid
-    if (!req.body.name || !req.body.email) {
-        sendJSONresponse(res, 400, {
+module.exports.updateCustomer = async(req, res)=>{
+    const customerId = req.params.customerId
+    if (!req.body.firstName || !req.body.lastName || !req.body.email) {
+        return sendJSONresponse(res, 400, {
             message: "Fill in all required fields",
         });
     }
 
-    // const{name, email, address, phonenumber, golf_club_size} = req.body
+    const { firstName, lastName, email, address, phoneNumber, gender, golfClubSize } = req.body;
+    try{
 
-    // pool.query(
-    //     `UPDATE users SET
-    //      email = $1,
-    //      name = $2, 
-    //      address = $3, 
-    //      phonenumber = $4,
-    //      golf_club_size = $5
-    //      WHERE userId=$6
-    //     `,
-    //     [
-    //        email,
-    //        name,
-    //        address,
-    //        phonenumber,
-    //        golf_club_size,
-    //        userId
-    //     ]
-    // ).then((response)=>{
-    //     sendJSONresponse(res, 200, {"message":`Customer record updated successfully`})
-    // }).catch((err)=>{
-    //     sendJSONresponse(res, 401, {"message":"There was an error updating customer record ",err})
-    // })
+         await pool.query("BEGIN")
+
+        const user = await pool.query("SELECT userId FROM customers WHERE customerId = $1",[customerId])
+        const userId =  user.rows[0].userid
+        // console.log(user.rows)
+        const userUpdateQuery = 
+        `
+            UPDATE users SET username = $1
+            WHERE userId = $2
+        `
+        const userRecord = await pool.query(userUpdateQuery, [email, userId])
+
+        const customerUpdateQuery = 
+        `
+         UPDATE customers SET
+         firstname = $1, lastname = $2, email = $3, phonenumber= $4, address = $5, gender = $6, golfclubsize = $7
+         WHERE customerId = $8
+        `
+        await pool.query(customerUpdateQuery, [firstName, lastName, email, phoneNumber, address, gender, golfClubSize, customerId])
+
+        await pool.query("COMMIT")
+
+        sendJSONresponse(res, 200, {"message":"Customer record updated successfully"})
+
+    }catch(err){
+        await pool.query("ROLLBACK")
+        sendJSONresponse(res, 400, {"message":"Failed to update customer record ",err})
+
+    }
 
 }
