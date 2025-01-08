@@ -3,6 +3,7 @@ var router = express.Router();
 
 const authCtrl = require("../controllers/auth")
 const messageCtrl = require("../controllers/message")
+const fittingCtrl = require("../controllers/fitting")
 // users creation apis
 router.post('/registerAdmin', authCtrl.registerAdmin)
 router.post('/registerCustomer', authCtrl.registerCustomer)
@@ -22,6 +23,10 @@ router.get('/golfClubMessage/:messageId', messageCtrl.readOneGolfClubMessage)
 router.put('/golfClubMessage/:messageId', messageCtrl.updateGolfClubMessage)
 
 //End of golf club message apis
+
+// Fitting Request apis 
+
+router.post('/createFittingRequest', fittingCtrl.createFittingRequest)
 
 
 module.exports = router;

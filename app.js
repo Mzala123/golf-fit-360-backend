@@ -10,6 +10,7 @@ const cors = require("cors")
 require("./model/db")
 const {createTableUser, createTableCustomer, createTableAdmin} =  require('./model/user')
 const createTableGolfClubMessage = require("./model/message")
+const {createTableFittingRequest, createTableFittingTasks} = require("./model/fitting")
 
 var routesApi = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -34,6 +35,14 @@ createTableAdmin().catch((err)=>{
 
 createTableGolfClubMessage().catch((err)=>{
   console.log("Error initializing database "+err)
+})
+
+createTableFittingRequest().catch((err)=>{
+  console.log("Error initializing database "+err)
+})
+
+createTableFittingTasks().catch(err=>{
+  console.log("Error ", err)
 })
 
 // view engine setup

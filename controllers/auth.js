@@ -126,16 +126,26 @@ module.exports.login = (req, res, next)=>{
         return
     }
 
-    passport.authenticate('local', function(err, user, info){
+    passport.authenticate('local', async function(err, user, info){
         if(err){
             sendJSONresponse(res, 400, err)
         }
         if(user){
             const token =  generateJwt(user)
-            sendJSONresponse(res, 200, {
+            const response = {
                 "token": token,
                 "user":user
-            }) 
+            }
+           
+            if(user.usertype === "ADMIN"){
+                const admin = await pool.query("SELECT * FROM admin WHERE userId=$1",[user.userid])
+                response.admin = admin.rows[0]
+            }else if(user.usertype === "CUSTOMER"){  
+                const customer = await pool.query("SELECT * FROM customers WHERE userId=$1",[user.userid])
+                response.customer = customer.rows[0]
+            }
+
+            sendJSONresponse(res, 200, response) 
         }else{
            sendJSONresponse(res, 401, {"message":info.message || "authentication failed"})
         }
@@ -148,7 +158,7 @@ module.exports.getCustomerList = (req, res)=>{
    .then((response)=>{
       sendJSONresponse(res, 200, response.rows)
    }).catch((err)=>{
-    sendJSONresponse(res, 401, err)
+     sendJSONresponse(res, 401, err)
    })
 }
 

@@ -2,7 +2,7 @@
 const pool = require("./db")
 
 const createTableGolfClubMessage = async()=>{
-    createTableQuery = 
+  const createTableQuery = 
     `
       CREATE TABLE IF NOT EXISTS golf_club_messages
       (
