@@ -73,13 +73,15 @@ module.exports.getListFittingRequests = (req, res)=>{
                 LEFT JOIN 
                 customers 
                 ON 
-                customers.userid = fitting_requests.userid`)
+                customers.userid = fitting_requests.userid  WHERE status NOT IN ('COMPLETED', 'CANCELLED')`)
      .then((response)=>{
         sendJSONresponse(res, 200, response.rows)
      }).catch((err)=>{
         sendJSONresponse(res, 401, err)
      })
 }
+
+
 
 module.exports.readOneFittingRequest = (req, res)=>{
     const fittingId = req.params.fittingId
@@ -114,9 +116,34 @@ module.exports.readOneFittingRequestTasks = (req, res)=>{
 
 }
 
+module.exports.fittingRequestSchedules =  (req, res)=>{
+    pool.query(`SELECT customers.firstname, customers.lastname,
+        fitting_requests.* FROM fitting_requests 
+        LEFT JOIN customers ON customers.userid = fitting_requests.userid
+        WHERE fitting_requests.status IN ('COMPLETED', 'SCHEDULED')`)
+    .then((response)=>{
+    sendJSONresponse(res, 200, response.rows)
+    }).catch((err)=>{
+    sendJSONresponse(res, 401, err)
+    })
+}
+
+
+module.exports.fittingRequestHistory = (req, res)=>{
+    pool.query(`SELECT 
+        fitting_requests.*, customers.*, TO_CHAR(fitting_requests.fittingscheduledate, 'YYYY-MM-DD') AS formatted_fittingscheduledate
+        FROM fitting_requests 
+        LEFT JOIN customers ON customers.userid = fitting_requests.userid`)
+    .then((response)=>{
+    sendJSONresponse(res, 200, response.rows)
+    }).catch((err)=>{
+    sendJSONresponse(res, 401, err)
+    })
+}
 
 module.exports.performFittingTask =async(req, res)=>{
    const taskId = req.params.taskId
+
     if(!req.body.fittingId || !req.body.taskname){
         return sendJSONresponse(res, 400, {message:"Fill in all required fields"})
     }

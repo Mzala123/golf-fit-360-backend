@@ -30,6 +30,8 @@ router.post('/fittingRequest', fittingCtrl.createFittingRequest)
 router.get('/fittingRequest', fittingCtrl.getListFittingRequests)
 router.get('/fittingRequest/:fittingId', fittingCtrl.readOneFittingRequest)
 router.get('/fittingRequestTasks/:fittingId', fittingCtrl.readOneFittingRequestTasks)
+router.get('/fittingRequestSchedules', fittingCtrl.fittingRequestSchedules)
+router.get('/fittingRequestHistory', fittingCtrl.fittingRequestHistory)
 
 router.put('/performFittingTask/:taskId', fittingCtrl.performFittingTask)
 
