@@ -26,7 +26,12 @@ router.put('/golfClubMessage/:messageId', messageCtrl.updateGolfClubMessage)
 
 // Fitting Request apis 
 
-router.post('/createFittingRequest', fittingCtrl.createFittingRequest)
+router.post('/fittingRequest', fittingCtrl.createFittingRequest)
+router.get('/fittingRequest', fittingCtrl.getListFittingRequests)
+router.get('/fittingRequest/:fittingId', fittingCtrl.readOneFittingRequest)
+router.get('/fittingRequestTasks/:fittingId', fittingCtrl.readOneFittingRequestTasks)
+
+router.put('/performFittingTask/:taskId', fittingCtrl.performFittingTask)
 
 
 module.exports = router;

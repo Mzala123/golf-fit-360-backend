@@ -177,14 +177,15 @@ module.exports.getOneCustomer = (req, res)=>{
 }
 
 module.exports.updateCustomer = async(req, res)=>{
+    console.log("ndafika")
     const customerId = req.params.customerId
-    if (!req.body.firstName || !req.body.lastName || !req.body.email) {
+    if (!req.body.firstname || !req.body.lastname || !req.body.email) {
         return sendJSONresponse(res, 400, {
             message: "Fill in all required fields",
         });
     }
 
-    const { firstName, lastName, email, address, phoneNumber, gender, golfClubSize } = req.body;
+    const { firstname, lastname, email, address, phonenumber, gender, golfclubsize } = req.body;
     try{
 
          await pool.query("BEGIN")
@@ -205,7 +206,7 @@ module.exports.updateCustomer = async(req, res)=>{
          firstname = $1, lastname = $2, email = $3, phonenumber= $4, address = $5, gender = $6, golfclubsize = $7
          WHERE customerId = $8
         `
-        await pool.query(customerUpdateQuery, [firstName, lastName, email, phoneNumber, address, gender, golfClubSize, customerId])
+        await pool.query(customerUpdateQuery, [firstname, lastname, email, phonenumber, address, gender, golfclubsize, customerId])
 
         await pool.query("COMMIT")
 

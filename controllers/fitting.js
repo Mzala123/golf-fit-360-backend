@@ -1,3 +1,4 @@
+const { response } = require('express');
 const pool = require('../model/db');
 const sendJSONresponse = require('../services/response')
 
@@ -20,8 +21,6 @@ module.exports.createFittingRequest = async(req, res)=>{
         "Fitting Scheduled",
         "Fitting Completed"
     ]
-
-
 
     try{
 
@@ -64,8 +63,155 @@ module.exports.createFittingRequest = async(req, res)=>{
     }
 }
 
-module.exports.performFittingTask = (req, res)=>{
+module.exports.getListFittingRequests = (req, res)=>{
+     pool.query(`SELECT 
+                fitting_requests.*, 
+                customers.*, 
+                TO_CHAR(fitting_requests.fittingscheduledate, 'YYYY-MM-DD') AS formatted_fittingscheduledate
+                FROM 
+                fitting_requests 
+                LEFT JOIN 
+                customers 
+                ON 
+                customers.userid = fitting_requests.userid`)
+     .then((response)=>{
+        sendJSONresponse(res, 200, response.rows)
+     }).catch((err)=>{
+        sendJSONresponse(res, 401, err)
+     })
+}
 
+module.exports.readOneFittingRequest = (req, res)=>{
+    const fittingId = req.params.fittingId
+
+    pool.query(`SELECT *, fitting_requests.userid FROM fitting_requests 
+                LEFT JOIN customers ON customers.userid = fitting_requests.userid
+                WHERE fitting_requests.fittingId = $1`,
+                [
+                    fittingId
+                ]).then((response)=>{
+                    sendJSONresponse(res, 200, response.rows[0])
+                }).catch((err)=>{
+                    sendJSONresponse(res, 401, err)
+    })
+}
+
+module.exports.readOneFittingRequestTasks = (req, res)=>{
+     const fittingId = req.params.fittingId
+     
+    pool.query(`SELECT fitting_tasks.*, CONCAT(customers.firstname,' ',customers.lastname) AS customer_name,
+            fitting_requests.* FROM fitting_requests 
+            LEFT JOIN customers ON customers.userid = fitting_requests.userid
+            LEFT JOIN fitting_tasks ON fitting_tasks.fittingId = fitting_requests.fittingId
+            WHERE fitting_requests.fittingId = $1 ORDER BY index`,
+        [
+            fittingId
+        ]).then((response)=>{
+            sendJSONresponse(res, 200, response.rows)
+        }).catch((err)=>{
+            sendJSONresponse(res, 401, err)
+        })
+
+}
+
+
+module.exports.performFittingTask =async(req, res)=>{
+   const taskId = req.params.taskId
+    if(!req.body.fittingId || !req.body.taskname){
+        return sendJSONresponse(res, 400, {message:"Fill in all required fields"})
+    }
+    const{fittingId, taskname} = req.body
+
+    if(taskname === 'Acknowledge Request' || taskname === 'Schedule Swing Analysis' || taskname === 'Swing Analysis Completed'){
+       try{
+
+        await pool.query("BEGIN")
+        const idDone = 1
+        const fittingtaskstatus = "COMPLETED"
+        const fittingrequeststatus = "PREPPED"
+
+        const fittingTaskUpdateQeury = `
+           UPDATE fitting_tasks SET fittingtaskstatus=$1, isdone=$2
+           WHERE fittingtaskid = $3
+        `
+        await pool.query(fittingTaskUpdateQeury,[fittingtaskstatus, idDone, taskId])
+
+        const fittingRequestUpdateQuery = `
+          UPDATE fitting_requests SET status=$1 WHERE fittingid = $2
+        `
+        await pool.query(fittingRequestUpdateQuery, [fittingrequeststatus, fittingId])
+
+        await pool.query("COMMIT")
+        
+        sendJSONresponse(res, 200, {"message":`${taskname} task has been completed successfully`})
+
+       }catch(err){
+         await pool.query("ROLLBACK")
+         sendJSONresponse(res, 400, {"message":`Failed to complete ${taskname} task`, err})
+       }
+       
+    }else if(taskname === 'Fitting Scheduled'){
+
+        try{
+
+            await pool.query("BEGIN")
+            const idDone = 1
+            const fittingtaskstatus = "COMPLETED"
+            const fittingrequeststatus = "SCHEDULED"
+    
+            const fittingTaskUpdateQeury = `
+               UPDATE fitting_tasks SET fittingtaskstatus=$1, isdone=$2
+               WHERE fittingtaskid = $3
+            `
+            await pool.query(fittingTaskUpdateQeury,[fittingtaskstatus, idDone, taskId])
+    
+            const fittingRequestUpdateQuery = `
+              UPDATE fitting_requests SET status=$1 WHERE fittingid = $2
+            `
+            await pool.query(fittingRequestUpdateQuery, [fittingrequeststatus, fittingId])
+    
+            await pool.query("COMMIT")
+            
+            sendJSONresponse(res, 200, {"message":`${taskname} task has been completed successfully`})
+    
+           }catch(err){
+             await pool.query("ROLLBACK")
+             sendJSONresponse(res, 400, {"message":`Failed to complete ${taskname} task`, err})
+           }
+
+        
+    }else if(taskname === 'Fitting Completed'){
+
+        try{
+
+            await pool.query("BEGIN")
+            const idDone = 1
+            const fittingtaskstatus = "COMPLETED"
+            const fittingrequeststatus = "COMPLETED"
+    
+            const fittingTaskUpdateQeury = `
+               UPDATE fitting_tasks SET fittingtaskstatus=$1, isdone=$2
+               WHERE fittingtaskid = $3
+            `
+            await pool.query(fittingTaskUpdateQeury,[fittingtaskstatus, idDone, taskId])
+    
+            const fittingRequestUpdateQuery = `
+              UPDATE fitting_requests SET status=$1 WHERE fittingid = $2
+            `
+            await pool.query(fittingRequestUpdateQuery, [fittingrequeststatus, fittingId])
+    
+            await pool.query("COMMIT")
+            
+            sendJSONresponse(res, 200, {"message":`${taskname} task has been completed successfully`})
+    
+           }catch(err){
+             await pool.query("ROLLBACK")
+             sendJSONresponse(res, 400, {"message":`Failed to complete ${taskname} task`, err})
+           }
+
+    }
+    
+    
 }
 
 
