@@ -35,5 +35,10 @@ router.get('/fittingRequestHistory', fittingCtrl.fittingRequestHistory)
 
 router.put('/performFittingTask/:taskId', fittingCtrl.performFittingTask)
 
+router.get('/readCustomerFittings/:userId',fittingCtrl.readCustomerFittings)
+router.get('/viewFittingProgressList/:userId', fittingCtrl.viewFittingProgressList)
+router.get('/viewFittingTaskProgressList/:fittingId', fittingCtrl.viewFittingTaskProgressList)
+
+router.get('/getAvailableFittingRequestDateTime', fittingCtrl.getAvailableFittingRequestDateTime)
 
 module.exports = router;

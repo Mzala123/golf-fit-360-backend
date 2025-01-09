@@ -242,4 +242,68 @@ module.exports.performFittingTask =async(req, res)=>{
 }
 
 
+module.exports.readCustomerFittings = (req, res)=>{
+      const userId = req.params.userId
+      pool.query(`SELECT 
+            fitting_requests.*, customers.*, TO_CHAR(fitting_requests.fittingscheduledate, 'YYYY-MM-DD') AS formatted_fittingscheduledate
+            FROM fitting_requests 
+            LEFT JOIN customers ON customers.userid = fitting_requests.userid
+            WHERE customers.userid = $1`,
+            [
+                userId
+            ])
+        .then((response)=>{
+        sendJSONresponse(res, 200, response.rows)
+        }).catch((err)=>{
+        sendJSONresponse(res, 401, err)
+        })
 
+}
+
+
+module.exports.viewFittingProgressList = (req, res)=>{
+     const userId = req.params.userId
+     pool.query(`SELECT customers.firstname, customers.lastname,
+            fitting_requests.*, TO_CHAR(fitting_requests.fittingscheduledate, 'YYYY-MM-DD') AS formatted_fittingscheduledate FROM fitting_requests 
+            LEFT JOIN customers ON customers.userid = fitting_requests.userid
+            LEFT JOIN fitting_tasks ON fitting_tasks.fittingid = fitting_requests.fittingid
+            WHERE fitting_requests.status NOT IN ('COMPLETED', 'CANCELLED') AND customers.userid = $1
+            GROUP BY fitting_requests.fittingid, customers.firstname, customers.lastname`,
+        [
+            userId
+        ])
+    .then((response)=>{
+    sendJSONresponse(res, 200, response.rows)
+    }).catch((err)=>{
+    sendJSONresponse(res, 401, err)
+    })
+}
+
+module.exports.viewFittingTaskProgressList = (req, res)=>{
+    const fittingId = req.params.fittingId
+        pool.query(`SELECT * FROM fitting_tasks 
+            LEFT JOIN fitting_requests ON fitting_requests.fittingid = fitting_tasks.fittingid
+            WHERE fitting_tasks.fittingid = $1`,
+        [
+            fittingId
+        ])
+    .then((response)=>{
+    sendJSONresponse(res, 200, response.rows)
+    }).catch((err)=>{
+    sendJSONresponse(res, 401, err)
+    })
+
+}
+
+module.exports.getAvailableFittingRequestDateTime = (req, res)=>{
+    pool.query(`SELECT fittingid AS id, fittingscheduledate AS date, fittingscheduletime AS time
+            FROM public.fitting_requests
+            WHERE fittingscheduledate >= CURRENT_DATE
+            ORDER BY fittingscheduledate ASC`)
+        .then((response)=>{
+        sendJSONresponse(res, 200, response.rows)
+        }).catch((err)=>{
+        sendJSONresponse(res, 401, err)
+        })
+
+}
