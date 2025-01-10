@@ -283,7 +283,7 @@ module.exports.viewFittingTaskProgressList = (req, res)=>{
     const fittingId = req.params.fittingId
         pool.query(`SELECT * FROM fitting_tasks 
             LEFT JOIN fitting_requests ON fitting_requests.fittingid = fitting_tasks.fittingid
-            WHERE fitting_tasks.fittingid = $1`,
+            WHERE fitting_tasks.fittingid = $1 ORDER BY index`,
         [
             fittingId
         ])
@@ -306,4 +306,19 @@ module.exports.getAvailableFittingRequestDateTime = (req, res)=>{
         sendJSONresponse(res, 401, err)
         })
 
+}
+
+module.exports.cancelFittingRequestsTasks =  (req, res)=>{
+    const fittingId = req.params.fittingId
+    pool.query(`UPDATE public.fitting_requests
+	      SET status = 'CANCELLED'
+	      WHERE fitting_requests.fittingid=$1`,
+    [
+        fittingId
+    ])
+    .then(()=>{
+        sendJSONresponse(res, 200, {"message":"Fitting request has been cancelled successfully"})
+    }).catch((error)=>{
+        sendJSONresponse(res, 400, {"message":"Failed to cancel fitting request",error})
+    })
 }

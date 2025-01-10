@@ -41,4 +41,6 @@ router.get('/viewFittingTaskProgressList/:fittingId', fittingCtrl.viewFittingTas
 
 router.get('/getAvailableFittingRequestDateTime', fittingCtrl.getAvailableFittingRequestDateTime)
 
+router.put('/cancelFittingRequestsTasks/:fittingId', fittingCtrl.cancelFittingRequestsTasks)
+
 module.exports = router;

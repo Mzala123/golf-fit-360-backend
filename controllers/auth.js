@@ -219,3 +219,5 @@ module.exports.updateCustomer = async(req, res)=>{
     }
 
 }
+
+// module.exports.getCustomerProfile
