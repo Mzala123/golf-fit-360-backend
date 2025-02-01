@@ -105,15 +105,16 @@ const validPassword = (user, password)=>{
 
 
 const generateJwt = (user) => {
-    const expiry = new Date();
-    expiry.setDate(expiry.getDate() + 7);
+    // const expiry = new Date();
+    // expiry.setDate(expiry.getDate() + 7);
+    const expiry = Math.floor(Date.now()/ 1000) + 30
 
     return jwt.sign(
         {
             userId: user.userId,
             email: user.email,
             name: user.name,
-            exp: parseInt(expiry.getTime() / 1000),
+            exp: expiry //parseInt(expiry.getTime() / 1000),
         },
         process.env.JWT_SECRET
     );

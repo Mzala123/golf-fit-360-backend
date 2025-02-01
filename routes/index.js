@@ -1,6 +1,15 @@
 var express = require('express');
 var router = express.Router();
 
+var {expressjwt: jwt} = require("express-jwt")
+
+var auth = jwt({
+       secret: process.env.JWT_SECRET,
+       algorithms: ['HS256'],
+        
+    }
+) 
+
 const authCtrl = require("../controllers/auth")
 const messageCtrl = require("../controllers/message")
 const fittingCtrl = require("../controllers/fitting")
@@ -11,9 +20,10 @@ router.post('/login', authCtrl.login)
 //End of users 
 
 //customer apis
-router.get('/customers', authCtrl.getCustomerList)
-router.get('/customers/:customerId', authCtrl.getOneCustomer)
-router.put('/customers/:customerId', authCtrl.updateCustomer)
+router.get('/customers', auth, authCtrl.getCustomerList)
+router.get('/customers/:customerId', auth,  authCtrl.getOneCustomer)
+router.put('/customers/:customerId', auth, authCtrl.updateCustomer)
+router.delete('/customers/:customerId', auth, authCtrl.deleteCustomer)
 //End of user apis
 
 //Golf club message apis

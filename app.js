@@ -14,7 +14,8 @@ const {createTableFittingRequest, createTableFittingTasks} = require("./model/fi
 
 var routesApi = require('./routes/index');
 var usersRouter = require('./routes/users');
-const passport = require("passport")
+const passport = require("passport");
+const sendJsonResponse = require("./services/response");
 
 require("./config/passport")
 
@@ -64,6 +65,12 @@ app.use('/users', usersRouter);
 app.use(function(req, res, next) {
   next(createError(404));
 });
+
+app.use((err, req, res, next)=>{
+  if(err.name === 'UnauthorizedError'){
+    sendJsonResponse(res, 401, {message: err.name+" "+err.message})
+  }
+})
 
 // error handler
 app.use(function(err, req, res, next) {

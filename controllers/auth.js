@@ -176,6 +176,19 @@ module.exports.getOneCustomer = (req, res)=>{
     })
 }
 
+module.exports.deleteCustomer = (req, res)=>{
+    const customerId = req.params.customerId
+    pool.query("DELETE FROM customers WHERE customerId=$1 ",
+        [
+            customerId
+        ])
+    .then((response)=>{
+       sendJSONresponse(res, 200, {message:"customer deleted"})
+    }).catch((err)=>{
+     sendJSONresponse(res, 401, err)
+    })
+}
+
 module.exports.updateCustomer = async(req, res)=>{
     console.log("ndafika")
     const customerId = req.params.customerId
