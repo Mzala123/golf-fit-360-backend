@@ -1,6 +1,6 @@
+const jwt = require("jsonwebtoken")
 const sendJSONresponse = require('../services/response' )
-const{ setPassword,
-    generateJwt,
+const{ setPassword,generateJwt,
     getUserByEmail} = require("../model/user");
 
 const pool = require('../model/db');
@@ -131,6 +131,8 @@ module.exports.login = (req, res, next)=>{
             sendJSONresponse(res, 400, err)
         }
         if(user){
+            console.log(user)
+
             const token =  generateJwt(user)
             const response = {
                 "token": token,

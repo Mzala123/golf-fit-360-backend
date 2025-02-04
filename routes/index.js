@@ -6,7 +6,7 @@ var {expressjwt: jwt} = require("express-jwt")
 var auth = jwt({
        secret: process.env.JWT_SECRET,
        algorithms: ['HS256'],
-        
+       requestProperty: "auth"
     }
 ) 
 
@@ -36,12 +36,12 @@ router.put('/golfClubMessage/:messageId', messageCtrl.updateGolfClubMessage)
 
 // Fitting Request apis 
 
-router.post('/fittingRequest', fittingCtrl.createFittingRequest)
-router.get('/fittingRequest', fittingCtrl.getListFittingRequests)
-router.get('/fittingRequest/:fittingId', fittingCtrl.readOneFittingRequest)
-router.get('/fittingRequestTasks/:fittingId', fittingCtrl.readOneFittingRequestTasks)
-router.get('/fittingRequestSchedules', fittingCtrl.fittingRequestSchedules)
-router.get('/fittingRequestHistory', fittingCtrl.fittingRequestHistory)
+router.post('/fittingRequest', auth, fittingCtrl.createFittingRequest)
+router.get('/fittingRequest',auth, fittingCtrl.getListFittingRequests)
+router.get('/fittingRequest/:fittingId',auth, fittingCtrl.readOneFittingRequest)
+router.get('/fittingRequestTasks/:fittingId',auth, fittingCtrl.readOneFittingRequestTasks)
+router.get('/fittingRequestSchedules',auth, fittingCtrl.fittingRequestSchedules)
+router.get('/fittingRequestHistory',auth, fittingCtrl.fittingRequestHistory)
 
 router.put('/performFittingTask/:taskId', fittingCtrl.performFittingTask)
 
@@ -52,5 +52,8 @@ router.get('/viewFittingTaskProgressList/:fittingId', fittingCtrl.viewFittingTas
 router.get('/getAvailableFittingRequestDateTime', fittingCtrl.getAvailableFittingRequestDateTime)
 
 router.put('/cancelFittingRequestsTasks/:fittingId', fittingCtrl.cancelFittingRequestsTasks)
+
+//router.get('/getUserDetails',auth,fittingCtrl.getUser)
+
 
 module.exports = router;

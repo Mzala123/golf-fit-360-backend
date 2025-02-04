@@ -1,16 +1,21 @@
 const { response } = require('express');
 const pool = require('../model/db');
-const sendJSONresponse = require('../services/response')
+const sendJSONresponse = require('../services/response');
+const jwt = require('jsonwebtoken');
 
+const getUser = require('../services/utils');
+const { use } = require('passport');
 
 module.exports.createFittingRequest = async(req, res)=>{
 
-    if(!req.body.userId || !req.body.fittingServiceCategory || !req.body.fittingScheduleDate || !req.body.fittingScheduleTime){
+    const user = await getUser(req)
+    const userId = user.userid
+    if(!req.body.fittingServiceCategory || !req.body.fittingScheduleDate || !req.body.fittingScheduleTime){
         return sendJSONresponse(res, 400, {message:"Fill in all required fields"})
     }
 
 
-    let{userId, fittingServiceCategory, status, fittingScheduleDate, fittingScheduleTime, comments} = req.body
+    let{fittingServiceCategory, status, fittingScheduleDate, fittingScheduleTime, comments} = req.body
 
     status = "SUBMITTED"
 
