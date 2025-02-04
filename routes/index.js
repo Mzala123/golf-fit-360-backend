@@ -27,10 +27,10 @@ router.delete('/customers/:customerId', auth, authCtrl.deleteCustomer)
 //End of user apis
 
 //Golf club message apis
-router.post('/golfClubMessage', messageCtrl.createGolfClubMessage)
-router.get('/readGettingStartedMessage', messageCtrl.readGettingStartedMessage)
-router.get('/golfClubMessage/:messageId', messageCtrl.readOneGolfClubMessage)
-router.put('/golfClubMessage/:messageId', messageCtrl.updateGolfClubMessage)
+router.post('/golfClubMessage', auth, messageCtrl.createGolfClubMessage)
+router.get('/readGettingStartedMessage', auth, messageCtrl.readGettingStartedMessage)
+router.get('/golfClubMessage/:messageId', auth, messageCtrl.readOneGolfClubMessage)
+router.put('/golfClubMessage/:messageId', auth, messageCtrl.updateGolfClubMessage)
 
 //End of golf club message apis
 
@@ -43,15 +43,15 @@ router.get('/fittingRequestTasks/:fittingId',auth, fittingCtrl.readOneFittingReq
 router.get('/fittingRequestSchedules',auth, fittingCtrl.fittingRequestSchedules)
 router.get('/fittingRequestHistory',auth, fittingCtrl.fittingRequestHistory)
 
-router.put('/performFittingTask/:taskId', fittingCtrl.performFittingTask)
+router.put('/performFittingTask/:taskId',auth, fittingCtrl.performFittingTask)
 
-router.get('/readCustomerFittings/:userId',fittingCtrl.readCustomerFittings)
-router.get('/viewFittingProgressList/:userId', fittingCtrl.viewFittingProgressList)
-router.get('/viewFittingTaskProgressList/:fittingId', fittingCtrl.viewFittingTaskProgressList)
+router.get('/readCustomerFittings/:userId', auth, fittingCtrl.readCustomerFittings)
+router.get('/viewFittingProgressList/:userId', auth, fittingCtrl.viewFittingProgressList)
+router.get('/viewFittingTaskProgressList/:fittingId', auth, fittingCtrl.viewFittingTaskProgressList)
 
-router.get('/getAvailableFittingRequestDateTime', fittingCtrl.getAvailableFittingRequestDateTime)
+router.get('/getAvailableFittingRequestDateTime',auth, fittingCtrl.getAvailableFittingRequestDateTime)
 
-router.put('/cancelFittingRequestsTasks/:fittingId', fittingCtrl.cancelFittingRequestsTasks)
+router.put('/cancelFittingRequestsTasks/:fittingId', auth, fittingCtrl.cancelFittingRequestsTasks)
 
 //router.get('/getUserDetails',auth,fittingCtrl.getUser)
 
