@@ -20,7 +20,7 @@ router.post('/login', authCtrl.login)
 //End of users 
 
 //customer apis
-router.get('/customers', auth, authCtrl.getCustomerList)
+router.get('/customers',auth,authCtrl.getCustomerList)
 router.get('/customers/:customerId', auth,  authCtrl.getOneCustomer)
 router.put('/customers/:customerId', auth, authCtrl.updateCustomer)
 router.delete('/customers/:customerId', auth, authCtrl.deleteCustomer)

@@ -3,7 +3,7 @@ const pool = require('../model/db');
 const sendJSONresponse = require('../services/response');
 const jwt = require('jsonwebtoken');
 
-const getUser = require('../services/utils');
+const {getUser} = require('../services/utils');
 const { use } = require('passport');
 
 module.exports.createFittingRequest = async(req, res)=>{

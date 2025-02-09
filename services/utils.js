@@ -18,4 +18,15 @@ const getUser = async(req)=>{
      }   
 }
 
-module.exports = getUser
+const getSQLFilter = (fields = [])=>{
+    return (placeholder)=>{
+        return fields.map((field)=>`${field} ILIKE ${placeholder}`).join(" OR ")
+    }
+}
+
+
+module.exports = {getUser, getSQLFilter}
+
+
+
+

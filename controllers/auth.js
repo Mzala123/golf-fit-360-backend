@@ -6,6 +6,8 @@ const{ setPassword,generateJwt,
 const pool = require('../model/db');
 const passport = require('passport');
 
+const {getSQLFilter} = require("../services/utils")
+
 module.exports.registerCustomer = async (req, res) => {
     if (!req.body.firstName || !req.body.lastName || !req.body.email || !req.body.password) {
         return sendJSONresponse(res, 400, {
@@ -155,14 +157,37 @@ module.exports.login = (req, res, next)=>{
     })(req, res, next);
 }
 
-module.exports.getCustomerList = (req, res)=>{
-   pool.query("SELECT * FROM customers ")
-   .then((response)=>{
-      sendJSONresponse(res, 200, response.rows)
-   }).catch((err)=>{
-     sendJSONresponse(res, 401, err)
-   })
-}
+module.exports.getCustomerList = async (req, res) => {
+    try {
+        let { page, limit, search } = req.query;
+    
+        let searchQuery  = getSQLFilter(["firstName", "lastName", "email", "phoneNumber", "address", "gender", "golfClubSize"])
+
+        const totalItems = parseInt((await pool.query(`SELECT COUNT(*) FROM customers WHERE ${searchQuery("$1")}`, [`%${search}%`])).rows[0].count);
+
+        page = (parseInt(limit) > totalItems ? 1: parseInt(page) ) || 1;
+        limit = parseInt(limit) || 5;
+        const offset = (page - 1) * limit;
+        
+        const customerList = (await pool.query( `SELECT * FROM customers WHERE ${searchQuery("$3")} LIMIT $1::int OFFSET $2::int`, [limit, offset,`%${search}%`])).rows;
+
+        const resultObj = {
+            totalItems,
+            totalPages: Math.ceil(totalItems / limit),
+            currentPage: page,
+            perPage: limit,
+            searchQuery: search || "",
+            data: customerList
+        };
+
+        sendJSONresponse(res, 200, resultObj);
+    } catch (err) {
+        console.error("Database Query Error:", err);
+        sendJSONresponse(res, 500, { error: "Internal Server Error", details: err.message });
+    }
+};
+
+
 
 module.exports.getOneCustomer = (req, res)=>{
     const customerId = req.params.customerId
