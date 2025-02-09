@@ -1,12 +1,12 @@
 const jwt = require("jsonwebtoken")
-const sendJSONresponse = require('../services/response' )
-const{ setPassword,generateJwt,
-    getUserByEmail} = require("../model/user");
+const sendJSONresponse = require('../services/response')
+const { setPassword, generateJwt,
+    getUserByEmail } = require("../model/user");
 
 const pool = require('../model/db');
 const passport = require('passport');
 
-const {getSQLFilter} = require("../services/utils")
+const { getSQLFilter, getSortQuery, getPageOffset} = require("../services/utils")
 
 module.exports.registerCustomer = async (req, res) => {
     if (!req.body.firstName || !req.body.lastName || !req.body.email || !req.body.password) {
@@ -65,7 +65,7 @@ module.exports.registerCustomer = async (req, res) => {
 
 
 
-module.exports.registerAdmin = async(req, res)=>{
+module.exports.registerAdmin = async (req, res) => {
     if (!req.body.firstName || !req.body.lastName || !req.body.email || !req.body.password) {
         return sendJSONresponse(res, 400, {
             message: "Fill in all required fields",
@@ -75,7 +75,7 @@ module.exports.registerAdmin = async(req, res)=>{
     const { firstName, lastName, email, password } = req.body;
     const userType = "ADMIN";
 
-    try{
+    try {
         const userExist = await getUserByEmail(email);
         if (userExist.length > 0) {
             return sendJSONresponse(res, 400, { message: "Email already in use with another user" });
@@ -101,17 +101,17 @@ module.exports.registerAdmin = async(req, res)=>{
 
         const token = generateJwt(userRecord.rows[0])
 
-        await pool.query("COMMIT") 
+        await pool.query("COMMIT")
 
-        sendJSONresponse(res, 201, 
+        sendJSONresponse(res, 201,
             {
                 token,
                 user: userRecord.rows[0],
                 admin: adminResponse.rows[0],
-                message:"Golffit admin has been registered successfully"
+                message: "Golffit admin has been registered successfully"
             })
 
-    }catch(err){
+    } catch (err) {
         await pool.query('ROLLBACK');
         sendJSONresponse(res, 400, {
             message: "Failed to register Golffit user",
@@ -122,36 +122,36 @@ module.exports.registerAdmin = async(req, res)=>{
 
 }
 
-module.exports.login = (req, res, next)=>{
-    if(!req.body.username || !req.body.password){
-        sendJSONresponse(res, 400, {"message":"Please fill in all required fields"})
+module.exports.login = (req, res, next) => {
+    if (!req.body.username || !req.body.password) {
+        sendJSONresponse(res, 400, { "message": "Please fill in all required fields" })
         return
     }
 
-    passport.authenticate('local', async function(err, user, info){
-        if(err){
+    passport.authenticate('local', async function (err, user, info) {
+        if (err) {
             sendJSONresponse(res, 400, err)
         }
-        if(user){
+        if (user) {
             console.log(user)
 
-            const token =  generateJwt(user)
+            const token = generateJwt(user)
             const response = {
                 "token": token,
-                "user":user
+                "user": user
             }
-           
-            if(user.usertype === "ADMIN"){
-                const admin = await pool.query("SELECT * FROM admin WHERE userId=$1",[user.userid])
+
+            if (user.usertype === "ADMIN") {
+                const admin = await pool.query("SELECT * FROM admin WHERE userId=$1", [user.userid])
                 response.admin = admin.rows[0]
-            }else if(user.usertype === "CUSTOMER"){  
-                const customer = await pool.query("SELECT * FROM customers WHERE userId=$1",[user.userid])
+            } else if (user.usertype === "CUSTOMER") {
+                const customer = await pool.query("SELECT * FROM customers WHERE userId=$1", [user.userid])
                 response.customer = customer.rows[0]
             }
 
-            sendJSONresponse(res, 200, response) 
-        }else{
-           sendJSONresponse(res, 401, {"message":info.message || "authentication failed"})
+            sendJSONresponse(res, 200, response)
+        } else {
+            sendJSONresponse(res, 401, { "message": info.message || "authentication failed" })
         }
 
     })(req, res, next);
@@ -159,17 +159,18 @@ module.exports.login = (req, res, next)=>{
 
 module.exports.getCustomerList = async (req, res) => {
     try {
-        let { page, limit, search } = req.query;
-    
-        let searchQuery  = getSQLFilter(["firstName", "lastName", "email", "phoneNumber", "address", "gender", "golfClubSize"])
+        let { page, limit, search, sort } = req.query;
+
+
+        const sortQuery = getSortQuery(sort)
+
+        let searchQuery = getSQLFilter(["firstName", "lastName", "email", "phoneNumber", "address", "gender", "golfClubSize"])
 
         const totalItems = parseInt((await pool.query(`SELECT COUNT(*) FROM customers WHERE ${searchQuery("$1")}`, [`%${search}%`])).rows[0].count);
 
-        page = (parseInt(limit) > totalItems ? 1: parseInt(page) ) || 1;
-        limit = parseInt(limit) || 5;
-        const offset = (page - 1) * limit;
-        
-        const customerList = (await pool.query( `SELECT * FROM customers WHERE ${searchQuery("$3")} LIMIT $1::int OFFSET $2::int`, [limit, offset,`%${search}%`])).rows;
+        const offset = getPageOffset(page, limit, totalItems)
+
+        const customerList = (await pool.query(`SELECT * FROM customers WHERE ${searchQuery("$3")} ${sortQuery} LIMIT $1::int OFFSET $2::int`, [limit, offset, `%${search}%`])).rows;
 
         const resultObj = {
             totalItems,
@@ -189,34 +190,34 @@ module.exports.getCustomerList = async (req, res) => {
 
 
 
-module.exports.getOneCustomer = (req, res)=>{
+module.exports.getOneCustomer = (req, res) => {
     const customerId = req.params.customerId
 
     pool.query("SELECT * FROM customers WHERE customerId=$1 ",
         [
             customerId
         ])
-    .then((response)=>{
-       sendJSONresponse(res, 200, response.rows[0])
-    }).catch((err)=>{
-     sendJSONresponse(res, 401, err)
-    })
+        .then((response) => {
+            sendJSONresponse(res, 200, response.rows[0])
+        }).catch((err) => {
+            sendJSONresponse(res, 401, err)
+        })
 }
 
-module.exports.deleteCustomer = (req, res)=>{
+module.exports.deleteCustomer = (req, res) => {
     const customerId = req.params.customerId
     pool.query("DELETE FROM customers WHERE customerId=$1 ",
         [
             customerId
         ])
-    .then((response)=>{
-       sendJSONresponse(res, 200, {message:"customer deleted"})
-    }).catch((err)=>{
-     sendJSONresponse(res, 401, err)
-    })
+        .then((response) => {
+            sendJSONresponse(res, 200, { message: "customer deleted" })
+        }).catch((err) => {
+            sendJSONresponse(res, 401, err)
+        })
 }
 
-module.exports.updateCustomer = async(req, res)=>{
+module.exports.updateCustomer = async (req, res) => {
     console.log("ndafika")
     const customerId = req.params.customerId
     if (!req.body.firstname || !req.body.lastname || !req.body.email) {
@@ -226,22 +227,22 @@ module.exports.updateCustomer = async(req, res)=>{
     }
 
     const { firstname, lastname, email, address, phonenumber, gender, golfclubsize } = req.body;
-    try{
+    try {
 
-         await pool.query("BEGIN")
+        await pool.query("BEGIN")
 
-        const user = await pool.query("SELECT userId FROM customers WHERE customerId = $1",[customerId])
-        const userId =  user.rows[0].userid
+        const user = await pool.query("SELECT userId FROM customers WHERE customerId = $1", [customerId])
+        const userId = user.rows[0].userid
         // console.log(user.rows)
-        const userUpdateQuery = 
-        `
+        const userUpdateQuery =
+            `
             UPDATE users SET username = $1
             WHERE userId = $2
         `
         const userRecord = await pool.query(userUpdateQuery, [email, userId])
 
-        const customerUpdateQuery = 
-        `
+        const customerUpdateQuery =
+            `
          UPDATE customers SET
          firstname = $1, lastname = $2, email = $3, phonenumber= $4, address = $5, gender = $6, golfclubsize = $7
          WHERE customerId = $8
@@ -250,11 +251,11 @@ module.exports.updateCustomer = async(req, res)=>{
 
         await pool.query("COMMIT")
 
-        sendJSONresponse(res, 200, {"message":"Customer record updated successfully"})
+        sendJSONresponse(res, 200, { "message": "Customer record updated successfully" })
 
-    }catch(err){
+    } catch (err) {
         await pool.query("ROLLBACK")
-        sendJSONresponse(res, 400, {"message":"Failed to update customer record ",err})
+        sendJSONresponse(res, 400, { "message": "Failed to update customer record ", err })
 
     }
 
