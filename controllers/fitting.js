@@ -3,7 +3,7 @@ const pool = require('../model/db');
 const sendJSONresponse = require('../services/response');
 const jwt = require('jsonwebtoken');
 
-const {getUser} = require('../services/utils');
+const {getUser, getSortQuery, getSQLFilter, getPageOffset} = require('../services/utils');
 const { use } = require('passport');
 
 module.exports.createFittingRequest = async(req, res)=>{
@@ -68,22 +68,43 @@ module.exports.createFittingRequest = async(req, res)=>{
     }
 }
 
-module.exports.getListFittingRequests = (req, res)=>{
-     pool.query(`SELECT 
-                fitting_requests.*, 
-                customers.*, 
-                TO_CHAR(fitting_requests.fittingscheduledate, 'YYYY-MM-DD') AS formatted_fittingscheduledate
-                FROM 
-                fitting_requests 
-                LEFT JOIN 
-                customers 
-                ON 
-                customers.userid = fitting_requests.userid  WHERE status NOT IN ('COMPLETED', 'CANCELLED')`)
-     .then((response)=>{
-        sendJSONresponse(res, 200, response.rows)
-     }).catch((err)=>{
-        sendJSONresponse(res, 401, err)
-     })
+module.exports.getListFittingRequests = async(req, res)=>{
+
+    try{
+    let {limit, page, search, sort} = req.query
+
+    let sortQuery
+    if(sort){
+     sortQuery = getSortQuery(sort)
+    }
+    search = search ? search : ""
+
+    let searchQuery = getSQLFilter(["firstName", "lastName", "email", "phoneNumber", "address", "gender", "golfClubSize", "fittingservicecategory", "status"])
+
+    const totalItems = parseInt((await pool.query(`SELECT COUNT(*) FROM fitting_requests LEFT JOIN customers ON 
+                customers.userid = fitting_requests.userid  WHERE status NOT IN ('COMPLETED', 'CANCELLED') AND ${searchQuery("$1")}`, [`%${search}%`])).rows[0].count)
+
+    const {limitDefault, offset} = getPageOffset(page, limit, totalItems)    
+    limit = limit ? limit : limitDefault   
+   
+    const fittingRequestList =  (await pool.query(`SELECT fitting_requests.*, customers.*, 
+        TO_CHAR(fitting_requests.fittingscheduledate, 'YYYY-MM-DD') AS formatted_fittingscheduledate
+        FROM fitting_requests LEFT JOIN customers ON 
+        customers.userid = fitting_requests.userid  WHERE status NOT IN ('COMPLETED', 'CANCELLED') AND ${searchQuery("$3")} ${ sort ? sortQuery : '' } LIMIT $1::int OFFSET $2::int`, [limit,offset,`%${search}%`])).rows
+    const resultObj = {
+        totalItems,
+        totalPages: Math.ceil(totalItems / limit),
+        currentPage: page,
+        perPage: limit,
+        searchQuery: search || "",
+        data: fittingRequestList
+    }
+
+    sendJSONresponse(res, 200, resultObj)
+
+    }catch(err){
+        sendJSONresponse(res, 500, { error: "Internal Server Error", details: err.message });
+    }
 }
 
 

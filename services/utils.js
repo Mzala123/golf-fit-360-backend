@@ -33,8 +33,9 @@ const getSortQuery = (sort)=>{
 
 const getPageOffset = (page, limit, totalItems)=>{
     page = (parseInt(limit) > totalItems ? 1 : parseInt(page)) || 1;
-    limit = parseInt(limit) || 5;
-    return (page - 1) * limit;
+    limitDefault = parseInt(limit) || 5;
+    const offset = (page - 1) * limitDefault
+    return {limitDefault, offset};
 }
 
 module.exports = {getUser, getSQLFilter, getSortQuery, getPageOffset}

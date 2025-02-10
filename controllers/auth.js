@@ -162,14 +162,16 @@ module.exports.getCustomerList = async (req, res) => {
         let { page, limit, search, sort } = req.query;
 
 
-        const sortQuery = getSortQuery(sort)
+         const sortQuery = getSortQuery(sort)
+
+         search = search ? search : ""
 
         let searchQuery = getSQLFilter(["firstName", "lastName", "email", "phoneNumber", "address", "gender", "golfClubSize"])
 
         const totalItems = parseInt((await pool.query(`SELECT COUNT(*) FROM customers WHERE ${searchQuery("$1")}`, [`%${search}%`])).rows[0].count);
 
-        const offset = getPageOffset(page, limit, totalItems)
-
+        const {limitDefault, offset} = getPageOffset(page, limit, totalItems)
+        limit = limit ? limit : limitDefault  
         const customerList = (await pool.query(`SELECT * FROM customers WHERE ${searchQuery("$3")} ${sortQuery} LIMIT $1::int OFFSET $2::int`, [limit, offset, `%${search}%`])).rows;
 
         const resultObj = {
