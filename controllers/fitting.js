@@ -215,8 +215,6 @@ module.exports.fittingRequestSchedules =  async(req, res)=>{
 
 
 module.exports.fittingRequestHistory = async(req, res)=>{
-
-
     try{
 
         let {limit, page, search, sort} = req.query
@@ -368,8 +366,9 @@ module.exports.performFittingTask =async(req, res)=>{
 }
 
 
-module.exports.readCustomerFittings = (req, res)=>{
-      const userId = req.params.userId
+module.exports.readCustomerFittings = async(req, res)=>{
+    const user = await getUser(req)
+    const userId = user.userid
       pool.query(`SELECT 
             fitting_requests.*, customers.*, TO_CHAR(fitting_requests.fittingscheduledate, 'YYYY-MM-DD') AS formatted_fittingscheduledate
             FROM fitting_requests 
@@ -387,8 +386,9 @@ module.exports.readCustomerFittings = (req, res)=>{
 }
 
 
-module.exports.viewFittingProgressList = (req, res)=>{
-     const userId = req.params.userId
+module.exports.viewFittingProgressList = async(req, res)=>{
+    const user = await getUser(req)
+    const userId = user.userid
      pool.query(`SELECT customers.firstname, customers.lastname,
             fitting_requests.*, TO_CHAR(fitting_requests.fittingscheduledate, 'YYYY-MM-DD') AS formatted_fittingscheduledate FROM fitting_requests 
             LEFT JOIN customers ON customers.userid = fitting_requests.userid

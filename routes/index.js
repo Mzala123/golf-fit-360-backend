@@ -45,8 +45,8 @@ router.get('/fittingRequestHistory',auth, fittingCtrl.fittingRequestHistory)
 
 router.put('/performFittingTask/:taskId',auth, fittingCtrl.performFittingTask)
 
-router.get('/readCustomerFittings/:userId', auth, fittingCtrl.readCustomerFittings)
-router.get('/viewFittingProgressList/:userId', auth, fittingCtrl.viewFittingProgressList)
+router.get('/readCustomerFittings', auth, fittingCtrl.readCustomerFittings)
+router.get('/viewFittingProgressList', auth, fittingCtrl.viewFittingProgressList)
 router.get('/viewFittingTaskProgressList/:fittingId', auth, fittingCtrl.viewFittingTaskProgressList)
 
 router.get('/getAvailableFittingRequestDateTime',auth, fittingCtrl.getAvailableFittingRequestDateTime)
