@@ -71,6 +71,7 @@ module.exports.createFittingRequest = async(req, res)=>{
 module.exports.getListFittingRequests = async(req, res)=>{
 
     try{
+
     let {limit, page, search, sort} = req.query
 
     let sortQuery
@@ -142,16 +143,75 @@ module.exports.readOneFittingRequestTasks = (req, res)=>{
 
 }
 
-module.exports.fittingRequestSchedules =  (req, res)=>{
-    pool.query(`SELECT customers.firstname, customers.lastname,
+module.exports.fittingRequestSchedules =  async(req, res)=>{
+
+    try{
+
+        let {limit, page, search, sort} = req.query
+    
+    
+        if(sort){
+         var sortQuery = getSortQuery(sort)
+        }
+
+        //search = search ? search : null
+        let  searchQuery = getSQLFilter(["firstname", "lastname", "fittingservicecategory", "status"])
+
+        const totalItems = parseInt((await pool.query(`SELECT COUNT(*) FROM fitting_requests 
+        LEFT JOIN customers ON customers.userid = fitting_requests.userid
+        WHERE fitting_requests.status IN ('COMPLETED', 'SCHEDULED') AND
+        (
+            CASE WHEN $1::TEXT IS NOT NULL THEN ${searchQuery("$2")}
+            ELSE TRUE
+            END
+        )
+         `, [search ? `%${search}%`: null, `%${search}%`])).rows[0].count)
+
+        console.log("count is ",totalItems)
+
+
+        const {limitDefault, offset} = getPageOffset(page, limit, totalItems)    
+        limit = limit ? limit : limitDefault   
+
+        const fittingShedule = (await pool.query(`SELECT customers.firstname, customers.lastname,
         fitting_requests.* FROM fitting_requests 
         LEFT JOIN customers ON customers.userid = fitting_requests.userid
-        WHERE fitting_requests.status IN ('COMPLETED', 'SCHEDULED')`)
-    .then((response)=>{
-    sendJSONresponse(res, 200, response.rows)
-    }).catch((err)=>{
-    sendJSONresponse(res, 401, err)
-    })
+        WHERE fitting_requests.status IN ('COMPLETED', 'SCHEDULED') AND
+        (
+         CASE WHEN  $3::TEXT IS NOT NULL THEN ${searchQuery("$4")}
+         ELSE TRUE
+         END
+        )
+         ${ sort ? sortQuery : '' } LIMIT $1::int OFFSET $2::int`, [limit,offset, search ? `%${search}%`: null, `%${search}%`])).rows
+
+
+        const resultObj = {
+            totalItems,
+            totalPages: Math.ceil(totalItems / limit),
+            currentPage: page,
+            perPage: limit,
+            searchQuery: search || "",
+            data: fittingShedule
+        }
+    
+        sendJSONresponse(res, 200, resultObj)
+
+    }catch(err){
+        console.log(err)
+        sendJSONresponse(res, 500, { error: "Internal Server Error", details: err.message });
+    }
+
+    // pool.query(`SELECT customers.firstname, customers.lastname,
+    //     fitting_requests.* FROM fitting_requests 
+    //     LEFT JOIN customers ON customers.userid = fitting_requests.userid
+    //     WHERE fitting_requests.status IN ('COMPLETED', 'SCHEDULED')`)
+    // .then((response)=>{
+    // sendJSONresponse(res, 200, response.rows)
+    // }).catch((err)=>{
+    // sendJSONresponse(res, 401, err)
+    // })
+
+
 }
 
 

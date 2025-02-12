@@ -3,7 +3,6 @@ const getUser = async(req)=>{
     if (!req.auth || !req.auth.userId) {
         throw new Error('Unauthorized: Missing authentication');
     }
-    //return req.auth;
      try{
         const response = await pool.query(`SELECT * FROM users WHERE userId= $1`,
             [
@@ -20,7 +19,7 @@ const getUser = async(req)=>{
 
 const getSQLFilter = (fields = [])=>{
     return (placeholder)=>{
-        return fields.map((field)=>`${field} ILIKE ${placeholder}`).join(" OR ")
+        return fields.map((field, index)=>`${field} ILIKE ${placeholder}`).join(" OR ")
     }
 }
 
