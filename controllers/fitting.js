@@ -125,7 +125,6 @@ module.exports.getListFittingRequests = async(req, res)=>{
 
 module.exports.readOneFittingRequest = (req, res)=>{
     const fittingId = req.params.fittingId
-
     pool.query(`SELECT *, fitting_requests.userid FROM fitting_requests 
                 LEFT JOIN customers ON customers.userid = fitting_requests.userid
                 WHERE fitting_requests.fittingId = $1`,
@@ -389,21 +388,57 @@ module.exports.readCustomerFittings = async(req, res)=>{
 module.exports.viewFittingProgressList = async(req, res)=>{
     const user = await getUser(req)
     const userId = user.userid
-     pool.query(`SELECT customers.firstname, customers.lastname,
-            fitting_requests.*, TO_CHAR(fitting_requests.fittingscheduledate, 'YYYY-MM-DD') AS formatted_fittingscheduledate FROM fitting_requests 
+
+    try{
+
+        let {limit, page, search, sort} = req.query
+
+        let sortQuery
+        if(sort){
+         sortQuery = getSortQuery(sort)
+        }
+        search = search ? search : ""
+    
+        let searchQuery = getSQLFilter(["firstName", "lastName", "email", "phoneNumber", "address", "gender", "golfClubSize", "fittingservicecategory", "status"])
+
+        const totalItems = parseInt((await pool.query(`
+            SELECT 
+            COUNT(DISTINCT fitting_requests.fittingid)
+            FROM fitting_requests 
             LEFT JOIN customers ON customers.userid = fitting_requests.userid
             LEFT JOIN fitting_tasks ON fitting_tasks.fittingid = fitting_requests.fittingid
             WHERE fitting_requests.status NOT IN ('COMPLETED', 'CANCELLED') AND customers.userid = $1
-            GROUP BY fitting_requests.fittingid, customers.firstname, customers.lastname`,
-        [
-            userId
-        ])
-    .then((response)=>{
-    sendJSONresponse(res, 200, response.rows)
-    }).catch((err)=>{
-    sendJSONresponse(res, 401, err)
-    })
-}
+            AND  (
+               CASE WHEN $2::TEXT IS NOT NULL THEN ${searchQuery("$3")}
+               ELSE TRUE END
+            ) GROUP BY fitting_requests.fittingid, customers.firstname, customers.lastname
+           `, [userId, search ? `%${search}%` : null, `%${search}%`])).rows[0].count)
+
+         console.log(totalItems)
+
+
+    }catch(err){
+        console.log(err)
+        sendJSONresponse(res, 500, { error: "Internal Server Error", details: err.message }); 
+    }
+
+
+//      pool.query(`SELECT customers.firstname, customers.lastname,
+//             fitting_requests.*, TO_CHAR(fitting_requests.fittingscheduledate, 'YYYY-MM-DD') AS formatted_fittingscheduledate FROM fitting_requests 
+//             LEFT JOIN customers ON customers.userid = fitting_requests.userid
+//             LEFT JOIN fitting_tasks ON fitting_tasks.fittingid = fitting_requests.fittingid
+//             WHERE fitting_requests.status NOT IN ('COMPLETED', 'CANCELLED') AND customers.userid = $1
+//             GROUP BY fitting_requests.fittingid, customers.firstname, customers.lastname`,
+//         [
+//             userId
+//         ])
+//     .then((response)=>{
+//     sendJSONresponse(res, 200, response.rows)
+//     }).catch((err)=>{
+//     sendJSONresponse(res, 401, err)
+//     })
+
+ }
 
 module.exports.viewFittingTaskProgressList = (req, res)=>{
     const fittingId = req.params.fittingId
