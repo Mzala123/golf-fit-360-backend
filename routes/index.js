@@ -53,7 +53,6 @@ router.get('/getAvailableFittingRequestDateTime',auth, fittingCtrl.getAvailableF
 
 router.put('/cancelFittingRequestsTasks/:fittingId', auth, fittingCtrl.cancelFittingRequestsTasks)
 
-//router.get('/getUserDetails',auth,fittingCtrl.getUser)
 
 
 module.exports = router;
